@@ -53,6 +53,23 @@ module.exports = function (app) {
           else res.send(docs);
         })
     })
+
+    .delete(function(req, res) {
+      let board = req.params.board;
+      let collection = req.db.collection(COLLECTION_NAME);
+      let o_id = new objectID(req.body.thread_id);
+      let deletePassword = req.body.delete_password;
+      collection.findOne({_id: o_id}).then(doc => {
+          if (doc.delete_password === deletePassword) {
+            collection.deleteOne({_id: o_id});
+            res.send(`success`)
+          }
+          else res.send(`incorrect password`)
+        })
+        .catch(err => {
+          res.send(`DB Error: ${err}`)
+        })
+    })
     ;
 
   app.route('/api/replies/:board')
@@ -91,7 +108,25 @@ module.exports = function (app) {
           else res.send(result);
         })
     })
-    ;
 
+    .delete(function(req, res) {
+      let board = req.params.board;
+      let collection = req.db.collection(COLLECTION_NAME);
+      let threadID = new objectID(req.body.thread_id);
+      let replyID = new objectID(req.body.reply_id);
+      let deletePassword = req.body.delete_password;
+      collection.findOne({_id: threadID, 'replies._id':replyID}, {'replies.$':1}).then(doc => {
+        if (doc.replies[0].delete_password === deletePassword) {
+          collection.updateOne({_id: threadID, 'replies._id':replyID},
+            {$set: {'replies.$.text': `[deleted]`}})
+          res.send(`success`);
+        }
+        else res.send(`incorrect password`);
+      })
+      .catch(err => {
+        res.send(`DB Error: ${err}`);
+      })
+    })
+    ;
 
 };
