@@ -34,6 +34,20 @@ module.exports = function (app) {
       res.redirect(`/b/${board}`);
     })
 
+    .put(function(req, res) {
+      let threadID = new objectID(req.body.thread_id);
+      let board = req.params.board;
+      let collection = req.db.collection(COLLECTION_NAME);
+      collection.updateOne({_id: threadID, board: board},
+        {
+          $set: {reported: true}
+        })
+        .then(res.send(`success`))
+        .catch(e => {
+          res.send(e);
+        })
+    })
+
     .get(function (req, res) {
       let board = req.params.board;
       let collection = req.db.collection(COLLECTION_NAME);
@@ -90,6 +104,19 @@ module.exports = function (app) {
           $push: { replies: reply }
         });
       res.redirect(`/b/${board}/${req.body.thread_id}`)
+    })
+
+    .put(function(req, res) {
+      let threadID = new objectID(req.body.thread_id);
+      let replyID = new objectID(req.body.reply_id);
+      let board = req.params.board;
+      let collection = req.db.collection(COLLECTION_NAME);
+      collection.updateOne({_id: threadID, 'replies._id': replyID},
+        {$set: {'replies.$.reported': true}})
+        .then(res.send(`success`))
+        .catch(e => {
+          res.send(e);
+        })
     })
 
     .get(function (req, res) {
